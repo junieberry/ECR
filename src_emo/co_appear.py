@@ -145,8 +145,8 @@ class TOCoAppear:
         for e in self.id2entity.keys():
             co_es = trans_matrix[e]
             co_num = sum(list(co_es.values()))
-            if co_num == 0:
-                print('here')
+            # if co_num == 0:
+                # print('here')
             nei_mvs_oh = torch.zeros(self.entity_num)
             for co_e, num in co_es.items():
                 nei_mvs_oh[co_e] = num / co_num

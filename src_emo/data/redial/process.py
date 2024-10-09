@@ -39,6 +39,8 @@ def process(data_file, out_file, movie_set):
             emo_list = []
             emo_probs_list = []
             messages = dialog['messages']
+            
+            
             turn_i = 0
             while turn_i < len(messages):
                 worker_id = messages[turn_i]['senderWorkerId']
@@ -57,6 +59,7 @@ def process(data_file, out_file, movie_set):
                     entity_turn.extend(entity_ids)
 
                     movie_ids = [entity2id[movie] for movie in messages[turn_j]['movie'] if movie in entity2id]
+                    
                     movie_turn.extend(movie_ids)
                     turn_emotion = []
                     turn_emotion_probs = []
@@ -82,9 +85,6 @@ def process(data_file, out_file, movie_set):
                 utt = ' '.join(utt_turn)
 
                 role = "seeker" if worker_id == user_id else "recommender"
-                #     context.append(utt)
-                #     entity_list.append(entity_turn + movie_turn)
-                # else:
                 resp = utt
                 turns.append({"resp":resp, "role":role, "emo_turn":emo_turn, "emo_probs_turn":emo_prob_turn,
                               "entity_turn":entity_turn, "movie_turn":movie_turn})
@@ -127,9 +127,9 @@ if __name__ == '__main__':
         entity2id = json.load(f)
     item_set = set()
 
-    process('valid_data_dbpedia_emo.jsonl', 'valid_data_processed.jsonl', item_set)
-    process('test_data_dbpedia_emo.jsonl', 'test_data_processed.jsonl', item_set)
-    process('train_data_dbpedia_emo.jsonl', 'train_data_processed.jsonl', item_set)
+    process('valid_data_dbpedia_emo.jsonl', 'valid_data_processed_pre.jsonl', item_set)
+    process('test_data_dbpedia_emo.jsonl', 'test_data_processed_pre.jsonl', item_set)
+    process('train_data_dbpedia_emo.jsonl', 'train_data_processed_pre.jsonl', item_set)
 
     with open('item_ids.json', 'w', encoding='utf-8') as f:
         json.dump(list(item_set), f, ensure_ascii=False)

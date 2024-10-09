@@ -75,6 +75,7 @@ def process(data_file, out_file, movie_set, movie_name_set = None):
 
                     movie_ids = [entity2id[movie] for movie in messages[turn_j]['movie'] if movie in entity2id]
                     movie_ids_s = [movie2id[movie.replace(" ", "")] for movie in messages[turn_j]['movie_name']]
+                    
                     I_movie_sentiment = []
                     for mid in movie_ids_s:
                         I_movie_sentiment.append(Ilabel[mid]["liked"] if mid in Ilabel.keys() else 2)
@@ -195,9 +196,9 @@ if __name__ == '__main__':
     # with open('node2abs_link_clean.json', 'r', encoding='utf-8') as f:
     #     node2entity = json.load(f)
 
-    process('valid_data_dbpedia_emo.jsonl', 'valid_data_processed.jsonl', movie_set)
-    process('test_data_dbpedia_emo.jsonl', 'test_data_processed.jsonl', movie_set)
-    process('train_data_dbpedia_emo.jsonl', 'train_data_processed.jsonl', movie_set, movie_name_set)
+    process('valid_data_dbpedia_emo.jsonl', 'valid_data_processed_conv.jsonl', movie_set)
+    process('test_data_dbpedia_emo.jsonl', 'test_data_processed_conv.jsonl', movie_set)
+    process('train_data_dbpedia_emo.jsonl', 'train_data_processed_conv.jsonl', movie_set, movie_name_set)
 
 
     # process_pretrain('emp_dataset_{}.json', 'emo_datasest_processed_{}.json')

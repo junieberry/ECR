@@ -285,7 +285,7 @@ if __name__ == '__main__':
                 nei_mer = args.nei_mer
                 )
                 batch['context']['prompt_embeds'] = prompt_embeds
-                batch['context']['entity_embeds'] = prompt_encoder.get_entity_embeds()
+                batch['context']['entity_embeds'] = accelerator.unwrap_model(prompt_encoder).get_entity_embeds()
 
                 labels = batch['context']['rec_labels']
                 outputs = model(**batch['context'], rec=True, weighted_loss=args.weighted_loss, use_sentiment = args.use_sentiment, copy_logit = copy_logit, copy_w = args.copy_w)
@@ -306,7 +306,15 @@ if __name__ == '__main__':
                 evaluator.evaluate_AUC(F.softmax(outputs.rec_logits, dim=-1), labels, mse_met)
 
         # metric
-        report, report_add = accelerator.gather(evaluator.report())
+        # report, report_add = accelerator.gather(evaluator.report())
+        # for k, v in report.items():
+        #     report[k] = v.sum().item()
+        # for k, v in report_add.items():
+        #     report_add[k] = v.sum().item()
+        report, report_add = evaluator.report()
+        report = {k: v.to(accelerator.device) for k, v in report.items()}
+        report_add = {k: v.to(accelerator.device) for k, v in report_add.items()}
+        report, report_add = accelerator.gather(report), accelerator.gather(report_add)
         for k, v in report.items():
             report[k] = v.sum().item()
         for k, v in report_add.items():
@@ -352,7 +360,7 @@ if __name__ == '__main__':
                 nei_mer = args.nei_mer
                 )
                 batch['context']['prompt_embeds'] = prompt_embeds
-                batch['context']['entity_embeds'] = prompt_encoder.get_entity_embeds()
+                batch['context']['entity_embeds'] = accelerator.unwrap_model(prompt_encoder).get_entity_embeds()
 
                 outputs = model(**batch['context'], weighted_loss=args.weighted_loss, rec=True, use_sentiment = args.use_sentiment, copy_logit = copy_logit, copy_w = args.copy_w)
                 test_loss.append(float(outputs.rec_loss))
@@ -371,7 +379,15 @@ if __name__ == '__main__':
                 evaluator.evaluate_AUC(F.softmax(outputs.rec_logits, dim=-1), labels, mse_met)
 
         # metric
-        report, report_add = accelerator.gather(evaluator.report())
+        # report, report_add = accelerator.gather(evaluator.report())
+        # for k, v in report.items():
+        #     report[k] = v.sum().item()
+        # for k, v in report_add.items():
+        #     report_add[k] = v.sum().item()
+        report, report_add = evaluator.report()
+        report = {k: v.to(accelerator.device) for k, v in report.items()}
+        report_add = {k: v.to(accelerator.device) for k, v in report_add.items()}
+        report, report_add = accelerator.gather(report), accelerator.gather(report_add)
         for k, v in report.items():
             report[k] = v.sum().item()
         for k, v in report_add.items():
@@ -413,7 +429,7 @@ if __name__ == '__main__':
                 nei_mer = args.nei_mer
                 )
                 batch['context']['prompt_embeds'] = prompt_embeds
-                batch['context']['entity_embeds'] = prompt_encoder.get_entity_embeds()
+                batch['context']['entity_embeds'] = accelerator.unwrap_model(prompt_encoder).get_entity_embeds()
 
                 loss = model(**batch['context'], rec=True, weighted_loss = args.weighted_loss, use_sentiment = args.use_sentiment, copy_logit = copy_logit, copy_w = args.copy_w).rec_loss / args.gradient_accumulation_steps
                 accelerator.backward(loss, retain_graph = True)
@@ -459,7 +475,7 @@ if __name__ == '__main__':
                 nei_mer = args.nei_mer
                     )
                     batch['context']['prompt_embeds'] = prompt_embeds
-                    batch['context']['entity_embeds'] = prompt_encoder.get_entity_embeds()
+                    batch['context']['entity_embeds'] = accelerator.unwrap_model(prompt_encoder).get_entity_embeds()
 
                     labels = batch['context']['rec_labels']
                     outputs = model(**batch['context'], rec=True, weighted_loss=args.weighted_loss, use_sentiment = args.use_sentiment, copy_logit = copy_logit, copy_w = args.copy_w)
@@ -476,11 +492,21 @@ if __name__ == '__main__':
 
 
             # metric
-            report, report_add = accelerator.gather(evaluator.report())
+            # report, report_add = accelerator.gather(evaluator.report())
+            # for k, v in report.items():
+            #     report[k] = v.sum().item()
+            # for k, v in report_add.items():
+            #     report_add[k] = v.sum().item()
+            report, report_add = evaluator.report()
+            report = {k: v.to(accelerator.device) for k, v in report.items()}
+            report_add = {k: v.to(accelerator.device) for k, v in report_add.items()}
+            report, report_add = accelerator.gather(report), accelerator.gather(report_add)
             for k, v in report.items():
                 report[k] = v.sum().item()
             for k, v in report_add.items():
                 report_add[k] = v.sum().item()
+
+
 
             valid_report = {}
             for k, v in report.items():
@@ -500,7 +526,7 @@ if __name__ == '__main__':
             evaluator.reset_metric()
 
             if valid_report[f'valid/{metric}'] * mode > best_metric * mode:
-                prompt_encoder.save(best_metric_dir)
+                accelerator.unwrap_model(prompt_encoder).save(best_metric_dir)
                 best_metric = valid_report[f'valid/{metric}']
                 logger.info(f'new best model with {metric}')
 
@@ -522,7 +548,7 @@ if __name__ == '__main__':
                 nei_mer = args.nei_mer
                     )
                     batch['context']['prompt_embeds'] = prompt_embeds
-                    batch['context']['entity_embeds'] = prompt_encoder.get_entity_embeds()
+                    batch['context']['entity_embeds'] = accelerator.unwrap_model(prompt_encoder).get_entity_embeds()
 
                     outputs = model(**batch['context'], weighted_loss=args.weighted_loss, rec=True, use_sentiment = args.use_sentiment, copy_logit = copy_logit, copy_w = args.copy_w)
                     test_loss.append(float(outputs.rec_loss))
@@ -537,7 +563,15 @@ if __name__ == '__main__':
                     evaluator.evaluate_AUC(F.softmax(outputs.rec_logits,dim=-1), labels, mse_met)
 
             # metric
-            report, report_add = accelerator.gather(evaluator.report())
+            # report, report_add = accelerator.gather(evaluator.report())
+            # for k, v in report.items():
+            #     report[k] = v.sum().item()
+            # for k, v in report_add.items():
+            #     report_add[k] = v.sum().item()
+            report, report_add = evaluator.report()
+            report = {k: v.to(accelerator.device) for k, v in report.items()}
+            report_add = {k: v.to(accelerator.device) for k, v in report_add.items()}
+            report, report_add = accelerator.gather(report), accelerator.gather(report_add)
             for k, v in report.items():
                 report[k] = v.sum().item()
             for k, v in report_add.items():
@@ -561,5 +595,5 @@ if __name__ == '__main__':
             evaluator.reset_metric()
 
         final_dir = os.path.join(args.output_dir, 'final')
-        prompt_encoder.save(final_dir)
+        accelerator.unwrap_model(prompt_encoder).save(final_dir)
         logger.info(f'save final model')

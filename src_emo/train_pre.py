@@ -8,6 +8,7 @@ import torch
 import transformers
 import wandb
 from accelerate import Accelerator
+from accelerate import DistributedDataParallelKwargs
 from accelerate.utils import set_seed
 from loguru import logger
 from torch.utils.data import DataLoader
@@ -34,12 +35,12 @@ def parse_args():
     parser.add_argument("--max_length", type=int, help="max input length in dataset.")
     parser.add_argument("--prompt_max_length", type=int)
     parser.add_argument("--entity_max_length", type=int, help="max entity length in dataset.")
-    parser.add_argument("--tokenizer", type=str,default="save/dialogpt/")
-    parser.add_argument("--text_tokenizer", type=str,default = "save/roberta/")
+    parser.add_argument("--tokenizer", type=str,default="microsoft/DialoGPT-small")
+    parser.add_argument("--text_tokenizer", type=str,default = "roberta-base")
     # model
-    parser.add_argument("--model", type=str, required=False,default = "save/dialogpt/",
+    parser.add_argument("--model", type=str, required=False,default = "microsoft/DialoGPT-small",
                         help="Path to pretrained model or model identifier from huggingface.co/models.")
-    parser.add_argument("--text_encoder", type=str,default = "save/roberta/")
+    parser.add_argument("--text_encoder", type=str,default = "roberta-base")
     parser.add_argument("--num_bases", type=int, default=8, help="num_bases in RGCN.")
     # optim
     parser.add_argument("--prompt_encoder", type=str, default=None)
@@ -97,7 +98,8 @@ if __name__ == '__main__':
             torch.backends.cudnn.deterministic = True
 
     # Initialize the accelerator. We will let the accelerator handle device placement for us.
-    accelerator = Accelerator(device_placement=False, fp16=args.fp16)
+    ddp_kwargs = DistributedDataParallelKwargs(find_unused_parameters=True)
+    accelerator = Accelerator(kwargs_handlers=[ddp_kwargs], device_placement=True, fp16=args.fp16)
     device = accelerator.device
 
     # Make one log on every process with the configuration for debugging.
@@ -107,7 +109,7 @@ if __name__ == '__main__':
     logger.add(f'log/{local_time}.log', level='DEBUG' if accelerator.is_local_main_process else 'ERROR')
     logger.info(config)
     logger.info(accelerator.state)
-    args.output_dir = args.output_dir + local_time
+    args.output_dir = args.output_dir 
 
     if accelerator.is_local_main_process:
         transformers.utils.logging.set_verbosity_info()
@@ -221,7 +223,7 @@ if __name__ == '__main__':
         batch_size=args.per_device_eval_batch_size,
         collate_fn=data_collator,
     )
-    evaluator = RecEvaluator()
+    evaluator = RecEvaluator(dataset=args.dataset)
     prompt_encoder, optimizer, train_dataloader, valid_dataloader, test_dataloader = accelerator.prepare(
         prompt_encoder, optimizer, train_dataloader, valid_dataloader, test_dataloader
     )
@@ -276,8 +278,8 @@ if __name__ == '__main__':
         prompt_encoder.train()
         # train
         for step, batch in enumerate(train_dataloader):
-            if step == 5908:
-                print("here")
+            # if step == 5908:
+                # print("here")
             with torch.no_grad():
                 token_embeds = text_encoder(**batch['prompt']).last_hidden_state
             prompt_embeds, copy_logit = prompt_encoder(
@@ -291,10 +293,10 @@ if __name__ == '__main__':
                 nei_mer = args.nei_mer
             )
             batch['context']['prompt_embeds'] = prompt_embeds
-            batch['context']['entity_embeds'] = prompt_encoder.get_entity_embeds()
+            batch['context']['entity_embeds'] = accelerator.unwrap_model(prompt_encoder).get_entity_embeds()
 
             loss = model(**batch['context'], rec=True, copy_logit = copy_logit, copy_w = args.copy_w).rec_loss / args.gradient_accumulation_steps
-            logger.info(loss)
+            # logger.info(loss)
             if loss.isnan():
                 logger.info("***** loss is nan here *****")
             accelerator.backward(loss, retain_graph = True)
@@ -352,7 +354,7 @@ if __name__ == '__main__':
                 nei_mer = args.nei_mer
                 )
                 batch['context']['prompt_embeds'] = prompt_embeds
-                batch['context']['entity_embeds'] = prompt_encoder.get_entity_embeds()
+                batch['context']['entity_embeds'] = accelerator.unwrap_model(prompt_encoder).get_entity_embeds()
 
                 outputs = model(**batch['context'], rec=True, copy_logit = copy_logit, copy_w = args.copy_w)
                 valid_loss.append(float(outputs.rec_loss))
@@ -362,9 +364,14 @@ if __name__ == '__main__':
                 evaluator.evaluate(ranks, labels)
 
         # metric
-        report, report_add = accelerator.gather(evaluator.report())
+        
+        report, _ = evaluator.report()
+        for k, v in report.items():
+            report[k] = v.to(device)
+        report = accelerator.gather(report)
         for k, v in report.items():
             report[k] = v.sum().item()
+        
 
         valid_report = {}
         for k, v in report.items():
@@ -378,7 +385,7 @@ if __name__ == '__main__':
         evaluator.reset_metric()
 
         if valid_report[f'valid/{metric}'] * mode > best_metric * mode:
-            prompt_encoder.save(best_metric_dir)
+            accelerator.unwrap_model(prompt_encoder).save(best_metric_dir)
             best_metric = valid_report[f'valid/{metric}']
             logger.info(f'new best model with {metric}')
 
@@ -399,7 +406,7 @@ if __name__ == '__main__':
                 nei_mer = args.nei_mer
                 )
                 batch['context']['prompt_embeds'] = prompt_embeds
-                batch['context']['entity_embeds'] = prompt_encoder.get_entity_embeds()
+                batch['context']['entity_embeds'] = accelerator.unwrap_model(prompt_encoder).get_entity_embeds()
 
                 outputs = model(**batch['context'], rec=True, copy_logit = copy_logit, copy_w = args.copy_w)
                 test_loss.append(float(outputs.rec_loss))
@@ -409,7 +416,10 @@ if __name__ == '__main__':
                 evaluator.evaluate(ranks, labels)
 
         # metric
-        report, report_add = accelerator.gather(evaluator.report())
+        report, _ = evaluator.report()
+        for k, v in report.items():
+            report[k] = v.to(device)
+        report = accelerator.gather(report)
         for k, v in report.items():
             report[k] = v.sum().item()
 
@@ -430,6 +440,7 @@ if __name__ == '__main__':
         # logger.info(f'save model of epoch {epoch}')
 
     final_dir = os.path.join(args.output_dir, 'final')
+    print(f"Final model saved in {final_dir}")
     os.makedirs(final_dir, exist_ok=True)
-    prompt_encoder.save(final_dir)
+    accelerator.unwrap_model(prompt_encoder).save(final_dir)
     logger.info(f'save final model')

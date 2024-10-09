@@ -45,7 +45,7 @@ class CRSDataset(Dataset):
             self.entity_max_length = self.tokenizer.model_max_length
 
         dataset_dir = os.path.join('data', dataset)
-        data_file = os.path.join(dataset_dir, f'{split}_data_processed.jsonl')
+        data_file = os.path.join(dataset_dir, f'{split}_data_processed_pre.jsonl')
         self.data = []
         self.prepare_data(data_file)
 

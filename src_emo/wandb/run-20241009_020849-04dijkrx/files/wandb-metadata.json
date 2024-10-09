@@ -1,0 +1,81 @@
+{
+  "os":  "Linux-5.15.0-91-generic-x86_64-with-glibc2.17",
+  "python":  "3.8.20",
+  "startedAt":  "2024-10-08T17:08:49.429463Z",
+  "args":  [
+    "--dataset",
+    "redial",
+    "--num_train_epochs",
+    "10",
+    "--gradient_accumulation_steps",
+    "4",
+    "--per_device_train_batch_size",
+    "16",
+    "--per_device_eval_batch_size",
+    "64",
+    "--num_warmup_steps",
+    "1389",
+    "--max_length",
+    "200",
+    "--prompt_max_length",
+    "200",
+    "--entity_max_length",
+    "32",
+    "--learning_rate",
+    "5e-4",
+    "--seed",
+    "42",
+    "--nei_mer",
+    "--use_wandb",
+    "--project",
+    "ecr",
+    "--name",
+    "redial_pre_2024",
+    "--seed",
+    "2024"
+  ],
+  "program":  "train_pre.py",
+  "codePath":  "src_emo/train_pre.py",
+  "git":  {
+    "remote":  "https://github.com/junieberry/ECR.git",
+    "commit":  "26e23429cb705da4b527ab6104aaa71944166ea9"
+  },
+  "email":  "junyoung44@g.skku.edu",
+  "root":  "/home/tako/junyoung/ECR/src_emo",
+  "host":  "lab16",
+  "username":  "tako",
+  "executable":  "/home/tako/anaconda3/envs/ecr/bin/python3.8",
+  "codePathLocal":  "train_pre.py",
+  "cpu_count":  32,
+  "cpu_count_logical":  64,
+  "gpu":  "[NVIDIA RTX A6000, NVIDIA RTX A6000]",
+  "gpu_count":  2,
+  "disk":  {
+    "/":  {
+      "total":  "966733185024",
+      "used":  "801798762496"
+    }
+  },
+  "memory":  {
+    "total":  "540655456256"
+  },
+  "cpu":  {
+    "count":  32,
+    "countLogical":  64
+  },
+  "gpu_nvidia":  [
+    {
+      "name":  "NVIDIA RTX A6000",
+      "memoryTotal":  "51527024640",
+      "cudaCores":  10752,
+      "architecture":  "Ampere"
+    },
+    {
+      "name":  "NVIDIA RTX A6000",
+      "memoryTotal":  "51527024640",
+      "cudaCores":  10752,
+      "architecture":  "Ampere"
+    }
+  ],
+  "cudaVersion":  "12.0"
+}

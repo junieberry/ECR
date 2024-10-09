@@ -1,10 +1,10 @@
 import math
-
+import os
 import torch
 import json
 
 class RecEvaluator:
-    def __init__(self, k_list=None, device=torch.device('cpu')):
+    def __init__(self, dataset, k_list=None, device=torch.device('cpu')):
         if k_list is None:
             k_list = [1, 10, 50]
         self.k_list = k_list
@@ -14,10 +14,11 @@ class RecEvaluator:
         self.metric_add = {}
         self.reset_metric()
 
-        self.log_file = open("save/redial_rec/rec.json", 'w', buffering=1)
+        os.makedirs(f"save/{dataset}", exist_ok=True)
+        self.log_file = open(f"save/{dataset}/rec.json", 'w', buffering=1)
         self.log_cnt = 0
 
-        with open('data/redial/entity2id.json', 'r', encoding='utf-8') as f:
+        with open(f'data/{dataset}/entity2id.json', 'r', encoding='utf-8') as f:
             entity2id = json.load(f)
         self.id2entity = {idx:entity for entity,idx in entity2id.items()}
 

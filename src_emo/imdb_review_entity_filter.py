@@ -100,7 +100,7 @@ def process(kg, data_file="data/redial/movie_reviews_filted_0.1_confi.json", out
         json.dump(mv2e, f, ensure_ascii=False)
     with open('data/redial/review_e_filted.json', 'w', encoding='utf-8') as f:
         json.dump(eset, f, ensure_ascii=False)
-    print("here")
+    # print("here")
 
     ef_cnt = defaultdict(int)
     for mv_name, review_list in tqdm(reviews.items()):

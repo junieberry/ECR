@@ -100,8 +100,8 @@ class CRSEmpDataset(Dataset):
             cnt = 0
             for review in tqdm(reviews):
                 cnt+=1
-                if cnt== 19500:
-                    print("here")
+                # if cnt== 19500:
+                    # print("here")
                 movie_name = review["movie_name"]
 
                 e_review = review["e_review"]
@@ -306,7 +306,7 @@ class CRSEmpDataset(Dataset):
                 self.data.append(data)
 
         self.cnt = sorted(self.cnt.items(), key=lambda d: d[0])
-        print("here")
+        # print("here")
 
 
     def __getitem__(self, item):
